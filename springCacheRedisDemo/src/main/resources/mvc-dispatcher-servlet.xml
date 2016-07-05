@@ -1,0 +1,55 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:cache="http://www.springframework.org/schema/cache"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+        http://www.springframework.org/schema/cache
+	    http://www.springframework.org/schema/cache/spring-cache.xsd
+        ">
+
+<!-- 启用缓存注解功能，这个是必须的，否则注解不会生效，另外，该注解一定要声明在spring主配置文件中才会生效 -->
+<cache:annotation-driven cache-manager="cacheManager" key-generator="localGenerator"></cache:annotation-driven>
+<context:component-scan base-package="org.cpframework.cache.redis"></context:component-scan>
+<context:property-placeholder location="config/redis.properties"/>
+<!-- spring自己的缓管理器，这里定义了两个缓存位置名称 ，既注解中的value -->
+<bean class="org.springframework.cache.support.SimpleCacheManager" id="cacheManager">
+	<property name="caches">
+		<set>
+            <bean class="org.cpframework.cache.redis.RedisCache">
+                   <property name="redisTemplate" ref="redisTemplate"></property>
+                   <property name="name" value="default"></property>
+            </bean>
+            <bean class="org.cpframework.cache.redis.RedisCache">
+                   <property name="redisTemplate" ref="redisTemplate"></property>
+                   <property name="name" value="commonCache"></property>
+            </bean>
+         </set>
+	</property>
+</bean>
+<bean class="redis.clients.jedis.JedisPoolConfig" id="poolConfig">
+      <property name="maxIdle" value="${redis.maxIdle}"/>
+      <property name="maxTotal" value="${redis.maxActive}"/>
+      <property name="maxWaitMillis" value="${redis.maxWait}"/>
+      <property name="testOnBorrow" value="${redis.testOnBorrow}"/>
+</bean>
+<bean class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" id="connectionFactory" 
+	p:hostname="${redis.host}" 
+	p:password="${redis.pass}" 
+	p:poolconfig-ref="poolConfig" 
+	p:port="${redis.port}">
+</bean>
+<bean class="org.springframework.data.redis.core.StringRedisTemplate" id="redisTemplate">
+       <property name="connectionFactory" ref="connectionFactory"></property>
+</bean>
+</beans>
